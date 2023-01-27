@@ -12,7 +12,7 @@ public class Task  {
     private final TaskType taskType;
 
 
-    private int id;
+
 
      int  repeatabilityType;
 
@@ -99,6 +99,17 @@ public class Task  {
                 '}';
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Task task = (Task) o;
+        return repeatabilityType == task.repeatabilityType && Objects.equals(taskName, task.taskName) && Objects.equals(taskBody, task.taskBody) && taskType == task.taskType && Objects.equals(date, task.date);
+    }
 
+    @Override
+    public int hashCode() {
+        return Objects.hash(taskName, taskBody, taskType, repeatabilityType, date);
+    }
 }
 
