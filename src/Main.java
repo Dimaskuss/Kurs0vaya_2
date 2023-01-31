@@ -1,16 +1,16 @@
 import java.time.LocalDate;
-import java.util.*;
+import java.time.LocalDateTime;
+import java.util.Scanner;
 
+import static java.lang.Integer.parseInt;
 
 public class Main {
 
-    public static Map<Integer, Task> tasks1 = new HashMap<>();
 
-    static int count = 0;
+    private static final ServiceTask serviceTask = new ServiceTask();
 
-    static int id;
 
-    public static void main(String[] args) throws InputErrorException {
+    public static void main(String[] args) throws  TaskNotFoundException {
 
 
         try (Scanner scanner = new Scanner(System.in)) {
@@ -39,19 +39,18 @@ public class Main {
                 }
             }
 
+
+        } catch (InputErrorException e) {
+            throw new RuntimeException(e);
+//            System.out.println("введите корректные данные");
         }
-        System.out.println(tasks1);
+        serviceTask.showAllTasks();
 
 
+    }
 
 
-
-        }
-
-
-
-
-    private static void inputTask(Scanner scanner) throws InputErrorException {
+    private static void inputTask(Scanner scanner) throws IllegalArgumentException, InputErrorException {
 
 
         System.out.print("Введите название задачи: ");
@@ -61,11 +60,35 @@ public class Main {
         System.out.print("Введите саму задачу: ");
         String taskBody = scanner.next();
 
-        System.out.print("Укажите текстом тип задачи < WOR / PER > : ");
 
-//
-      TaskType taskType = TaskType.valueOf(scanner.next());
-//
+        System.out.print("Укажите номером тип задачи  1 - WORK / 2 - PER  : ");
+        TaskType taskType = null;
+        int typeChoice = scanner.nextInt();
+        if (typeChoice != 1 && typeChoice != 2) {
+            System.out.println("Введите 1 или 2");
+        }
+        switch (typeChoice) {
+            case 1:
+                taskType = TaskType.WOR;
+                break;
+            case 2:
+                taskType = TaskType.PER;
+                break;
+        }
+
+
+        System.out.println("Установим дату и время задачи!\nВведите день dd: ");
+        int day = parseInt(scanner.next());
+        System.out.println("Введите месяц mm: ");
+        int month = parseInt(scanner.next());
+        System.out.println("Введите год yy: ");
+        int year = parseInt(scanner.next());
+        System.out.println("Введите часы hh: ");
+        int hour = parseInt(scanner.next());
+        System.out.println("Введите минуты mm: ");
+        int minute = parseInt(scanner.next());
+        LocalDateTime date = LocalDateTime.of(year, month, day, hour, minute);
+
 
         System.out.print("Укажите цифрой индекс повторяемости задачи - \n" +
                 "1 - однократная,\n" +
@@ -75,67 +98,80 @@ public class Main {
                 "5 - ежегодная.\n" +
                 "Выбранный тип : ");
 
-        int repeatabilityType = Integer.parseInt(scanner.next());
-
-        count++;
-        id = count;
-
-
-        new Task(taskName, taskBody, taskType, repeatabilityType);
-
-
-        tasks1.put(id, new Task(taskName, taskBody, taskType, repeatabilityType));
-
-
-        try {
-            new Task(taskName, taskBody, taskType, repeatabilityType).checkInputErrors();
-        } catch (InputErrorException e) {
-            System.out.println("Процесс создания оборвался . Создайте задачу заново введя корректные данные");
-
-            tasks1.remove(id);
-
-            inputTask(scanner);
-
+        int repeatabilityType = scanner.nextInt();
+        if (repeatabilityType > 5 || repeatabilityType < 1) {
+            System.out.println("Введите корректный номер задачи");
         }
+        Task task = null;
+//        try {
+//
+            switch (repeatabilityType) {
+                case 1:
+                    task = new OneTimeTask(taskName, taskBody, taskType, date);
+                    break;
+                case 2:
+                    task = new DailyTask(taskName, taskBody, taskType, date);
+                    break;
+                case 3:
+                    task = new WeeklyTask(taskName, taskBody, taskType, date);
+                    break;
+                case 4:
+                    task = new MonthlyTask(taskName, taskBody, taskType, date);
+                    break;
+                case 5:
+                    task = new YearlyTask(taskName, taskBody, taskType, date);
+                    break;
+                default:
+                    break;
+            }
+//        }catch (InputErrorException e){
+//            System.out.println("Процесс создания оборвался . Создайте задачу заново введя корректные данные");
+//            }
+        serviceTask.addTask(task);
 
 
     }
 
-    private static void deleteTask(Scanner scanner) {
+    private static void deleteTask(Scanner scanner) throws TaskNotFoundException {
         System.out.print("Введите ID задачи которую хотите удалить : ");
-        int deleteNumber = Integer.parseInt(scanner.next());
-        tasks1.remove(deleteNumber);
-        System.out.println(" Задача "+ deleteNumber +" удалена ");
+        int deleteNumber = parseInt(scanner.next());
+        serviceTask.removeTask(deleteNumber);
+        System.out.println(" Задача " + deleteNumber + " удалена ");
+
 
 
 
     }
 
-    private static void getTaskForDate(Scanner scanner){
+    private static void getTaskForDate(Scanner scanner) {
+
 
         System.out.print("Введите день: ");
-        int day = Integer.parseInt(scanner.next());
+        int day = parseInt(scanner.next());
         System.out.print("Введите месяч: ");
-        int month = Integer.parseInt(scanner.next());
+        int month = parseInt(scanner.next());
         System.out.print("Введите год: ");
-        int year = Integer.parseInt(scanner.next());
-        LocalDate date = LocalDate.of(year,month,day);
+        int year = parseInt(scanner.next());
+        LocalDate dateForChecking = LocalDate.of(year, month, day);
 
-      for(Task task : tasks1.values()) // одноразовая задача (день в день)
-            if (task.getRepeatabilityType()==1 && task.getDate().getDayOfMonth()==date.getDayOfMonth() && task.getDate().getYear() == date.getYear() && task.getDate().getMonthValue()== date.getMonthValue())
-                System.out.println(task);
-      for(Task task : tasks1.values()) // каждый день
-            if (task.getRepeatabilityType()==2 )
-                System.out.println(task);
-      for(Task task : tasks1.values()) // каждую неделю
-            if (task.getRepeatabilityType()==3 && (task.getDate().getDayOfYear()-date.getDayOfYear())%7==0 && (task.getDate().getDayOfYear()-date.getDayOfYear())!=0)
-                System.out.println(task);
-      for(Task task : tasks1.values()) // каждый месяц
-            if (task.getRepeatabilityType()==4 && task.getDate().getDayOfMonth()==date.getDayOfMonth() && task.getDate().getYear() == date.getYear() && task.getDate().getMonthValue()!= date.getMonthValue())
-                System.out.println(task);
-      for(Task task : tasks1.values()) // каждый год
-            if (task.getRepeatabilityType()==5 && task.getDate().getDayOfMonth()==date.getDayOfMonth() && task.getDate().getYear() != date.getYear() && task.getDate().getMonthValue()== date.getMonthValue())
-                System.out.println(task);
+        serviceTask.getAllByDate(dateForChecking);
+
+
+//      for(Task task : tasks1.values()) // одноразовая задача (день в день)
+//            if (task.getRepeatabilityType()==1 && task.getDate().getDayOfMonth()==date.getDayOfMonth() && task.getDate().getYear() == date.getYear() && task.getDate().getMonthValue()== date.getMonthValue())
+//                System.out.println(task);
+//      for(Task task : tasks1.values()) // каждый день
+//            if (task.getRepeatabilityType()==2 )
+//                System.out.println(task);
+//      for(Task task : tasks1.values()) // каждую неделю
+//            if (task.getRepeatabilityType()==3 && (task.getDate().getDayOfYear()-date.getDayOfYear())%7==0 && (task.getDate().getDayOfYear()-date.getDayOfYear())!=0)
+//                System.out.println(task);
+//      for(Task task : tasks1.values()) // каждый месяц
+//            if (task.getRepeatabilityType()==4 && task.getDate().getDayOfMonth()==date.getDayOfMonth() && task.getDate().getYear() == date.getYear() && task.getDate().getMonthValue()!= date.getMonthValue())
+//                System.out.println(task);
+//      for(Task task : tasks1.values()) // каждый год
+//            if (task.getRepeatabilityType()==5 && task.getDate().getDayOfMonth()==date.getDayOfMonth() && task.getDate().getYear() != date.getYear() && task.getDate().getMonthValue()== date.getMonthValue())
+//                System.out.println(task);
 
 
     }
